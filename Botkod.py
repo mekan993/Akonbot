@@ -595,4 +595,4 @@ def handle_all_messages(message):
                         except:
                             pass
                     
-                   threading.Thread(target=delete_warning).start()
+                   target=delete_warning
