@@ -73,10 +73,9 @@ start_message = """🤖 Salam! Men AKON MODER BOT!
 🎮 San tapmaca oýny üçin: /Random_77
 🛡️ Moderasiýa komandalary:
 • /mute 
-• /warn 
+• /warn  
 • /ban 
-Üns Beriň: Berilen Buýruk yzyna Alynmaýar
-
+  Berilen buýruk yzyna Alynmaýar
 📞 Kömek üçin: @Tdm1912"""
 
 waiting_for_input = {}  # user_id -> {type: 'broadcast'|'add_admin'|'edit_start'|'user_search', chat_id}
@@ -369,6 +368,7 @@ Mysal: /Random_77 1 Ýyldyz""")
     elif data == 'statistics':
         stats = f"""📊 Statistika:
 
+Sizede seyle bot gerek bolsa admin bilen habarlasyn: @Tdm1912
 🎮 Jemi oýunlar: {statistics['total_games']}
 🔇 Jemi mute: {statistics['total_mutes']}
 ⚠️ Jemi warn: {statistics['total_warns']}
@@ -595,4 +595,101 @@ def handle_all_messages(message):
                         except:
                             pass
                     
-                   target=delete_warning
+                    threading.Thread(target=delete_warning).start()
+                    
+                except:
+                    print('Habary öçürip bolmady')
+                break
+
+# Bot täze çata goşulanda
+@bot.message_handler(content_types=['new_chat_members'])
+def new_member_handler(message):
+    chat_id = message.chat.id
+    
+    # Çaty sanawa goşmak
+    chat_list.add(chat_id)
+    
+    # Eger bot goşulan bolsa
+    bot_joined = any(member.id == bot.get_me().id for member in message.new_chat_members)
+    
+    if bot_joined:
+        try:
+            # Çat maglumatlaryny almak
+            chat = bot.get_chat(chat_id)
+            member_count = bot.get_chat_member_count(chat_id)
+            
+            # Bot eýesine habar bermek
+            join_message = f"""🤖 Bot täze çata goşuldy!
+
+📌 Çat: {chat.title}
+🆔 Chat ID: {chat_id}
+👥 Agza sany: {member_count}"""
+            
+            # Bot admin ýoklamasy
+            try:
+                bot_member = bot.get_chat_member(chat_id, bot.get_me().id)
+                is_admin_status = bot_member.status in ['administrator', 'creator']
+                
+                if not is_admin_status:
+                    join_message += "\n\n⚠️ Bot bu çatda admin däl! Käbir funksiýalar işlemeýär."
+            except:
+                join_message += "\n\n⚠️ Bot statusyny barlamak amala aşmady."
+            
+            bot.send_message(BOT_OWNER_ID, join_message)
+            
+        except:
+            print('Täze çat habary iberip bolmady')
+
+# Flask server endpointlary
+@app.route('/')
+def home():
+    return jsonify({
+        'status': 'Bot işleýär',
+        'botName': 'AKON MODER BOT',
+        'owner': BOT_OWNER_ID,
+        'activeGames': len(active_games),
+        'totalChats': len(chat_list),
+        'statistics': statistics
+    })
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy'})
+
+# Flask serveri aýratyn thread-da işletmek
+def run_flask():
+    app.run(host='0.0.0.0', port=PORT, debug=False)
+
+# Ana funksiýa
+def main():
+    print("═" * 63)
+    print("🤖 AKON MODER BOT - Python wersiýasy")
+    print("═" * 63)
+    print("✅ Hemme funksiýalar işleýär")
+    print("✅ Node.js gerek däl!")
+    print("✅ Diňe Python bilen işleýär")
+    print("═" * 63)
+    print(f"🎯 Bot Token: {BOT_TOKEN[:20]}...")
+    print(f"👤 Bot Eýesi: {BOT_OWNER_ID}")
+    print(f"🌐 Port: {PORT}")
+    print("═" * 63)
+    print("🚀 Bot başlaýar...\n")
+    
+    # Flask serveri başlatmak
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+    
+    print(f"🌐 Flask server {PORT} portunda işleýär")
+    print("✅ AKON MODER BOT üstünlikli başlady!")
+    
+    # Bot polling başlatmak
+    try:
+        bot.polling(none_stop=True)
+    except KeyboardInterrupt:
+        print("\n🛑 Bot durup durýar...")
+    except Exception as e:
+        print(f"❌ Bot ýalňyşlygy: {e}")
+
+if __name__ == "__main__":
+    main()
